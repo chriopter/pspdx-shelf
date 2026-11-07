@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<p>Add <code>{{ shelf.url }}/</code> as a source in PSPDX.</p>
+{% if not shelf.items and not shelf.progress %}<p class="muted">No .iso or .cso in <code>{{ shelf.discs_dir }}</code> yet.</p>{% endif %}
+<div class="tiles">
+{% for item in shelf.items if not (item.error or item.duplicate) %}
+  <a class="tile{{ '' if item.app else ' pending' }}" href="{{ request.script_root }}/discs/{{ item.id }}">
+    <b>{{ item.title }}</b>
+    {% if item.media.icon %}<img src="{{ request.script_root }}/{{ item.media.icon }}" alt="" width="144" height="80">{% else %}<span class="noicon">{{ item.format }}</span>{% endif %}
+    <span class="flag" title="{{ item.region }}">{{ item.region | flag }}</span>
+    <span class="muted"><span class="id">{{ item.id }} · </span>{{ item.size | size }}</span>
+  </a>
+{% endfor %}
+</div>
+{% for item in shelf.items if item.error or item.duplicate %}
+{% if loop.first %}<h2>Not listed</h2><table class="left-out">{% endif %}
+  <tr><td>{{ item.file }}</td><td class="muted">{% if item.error %}{{ item.error }}{% else %}same disc as <i>{{ item.duplicate }}</i>, which is listed{% endif %}</td></tr>
+{% if loop.last %}</table>{% endif %}
+{% endfor %}
+{% endblock %}

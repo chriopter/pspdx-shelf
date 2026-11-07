@@ -1,0 +1,12 @@
+services:
+  pspdx-shelf:
+    image: ghcr.io/chriopter/pspdx-shelf:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - /path/to/your/isos:/discs:ro
+      - ./data:/data
+    environment:
+      SHELF_URL: http://192.168.1.10:8080
+      # SHELF_PASSWORD: "1234567890123456"
+    restart: unless-stopped
