@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Library{% endblock %}
+{% block content %}
+<h1>Library <small>{{ counts.games }} games on {{ counts.images }} images, {{ counts.ok }} readable, {{ counts.errors }} unreadable, {{ counts.unhashed }} without hash, {{ counts.duplicates }} duplicates</small></h1>
+<form class="filters" method="get" action="{{ url_for('library.index') }}">
+  <input type="search" name="q" value="{{ filters.q }}" placeholder="title, file or disc id">
+  <select name="region"><option value="">any region</option>{% for r in regions %}<option value="{{ r }}" {% if filters.region == r %}selected{% endif %}>{{ r }}</option>{% endfor %}</select>
+  <select name="lang"><option value="">any language</option>{% for l in languages %}<option value="{{ l }}" {% if filters.lang == l %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  <select name="format"><option value="">iso and cso</option><option value="iso" {% if filters.format == 'iso' %}selected{% endif %}>iso</option><option value="cso" {% if filters.format == 'cso' %}selected{% endif %}>cso</option></select>
+  <select name="missing"><option value="">any media</option>{% for m in media_files %}<option value="{{ m }}" {% if filters.missing == m %}selected{% endif %}>missing {{ m }}</option>{% endfor %}</select>
+  <label><input type="checkbox" name="dup" value="1" {% if filters.dup %}checked{% endif %}> duplicates only</label>
+  <select name="sort">{% for s in ['title','versions','size','mtime'] %}<option value="{{ s }}" {% if filters.sort == s %}selected{% endif %}>by {{ s }}</option>{% endfor %}</select>
+  <button>Apply</button> <a href="{{ url_for('library.index') }}">clear</a>
+</form>
+{% if not games %}
+<p class="empty">No images{% if counts.images %} match{% else %} yet. Put .iso or .cso files in <code>{{ settings.library_dir }}</code> and <a href="{{ url_for('scan.page') }}">scan</a>{% endif %}.</p>
+{% endif %}
+<div class="tiles">
+{% for g in games %}
+  {% set face = g.face %}
+  <div class="tile game {{ 'error' if g.errors == g.versions|length }}" {% if face.has_media['PIC1.PNG'] %}style="--pic: url('{{ url_for('library.media', image_id=face.id, name='PIC1.PNG') }}')"{% endif %}>
+    <a class="icon" href="{{ url_for('library.disc', image_id=face.id) }}">{% if face.has_media['ICON0.PNG'] %}<img src="{{ url_for('library.media', image_id=face.id, name='ICON0.PNG') }}" alt="" width="144" height="80">{% else %}<span class="noicon">{{ face.format }}</span>{% endif %}</a>
+    <div class="text">
+      <a class="title" href="{{ url_for('library.disc', image_id=face.id) }}">{{ g.title }}</a>
+      <div class="sub">{{ g.versions|length }} version{{ 's' if g.versions|length != 1 }} · {{ g.regions|join(', ') }} · {{ g.languages|join(', ') or 'languages unknown' }} · {{ g.size|human_size }}</div>
+      <div class="versions">
+      {% for r in g.versions %}
+        <a class="version {{ r.status }} {{ 'dup' if r.duplicate }}" href="{{ url_for('library.disc', image_id=r.id) }}" title="{{ r.name }}">
+          <span class="badge region">{{ r.region }}</span> <span class="id">{{ r.disc_key }}</span>
+          <span class="langs">{{ r.languages|join(' ') }}</span>
+          <span class="fmt">{{ r.format }}, {{ r.size_human }}</span>
+          {% for m in media_files %}<span class="dot {{ 'has' if r.has_media[m] else 'no' }}" title="{{ m }}">{{ m[0] if m != 'PIC1.PNG' else 'P' }}</span>{% endfor %}
+          {% if r.duplicate %}<span class="badge warn">{{ 'newest of duplicates' if r.primary else 'older duplicate' }}</span>{% endif %}
+          {% if not r.sha256 and r.status == 'ok' %}<span class="badge no">no hash</span>{% endif %}
+          {% if r.pspdb_status == 'known' %}<span class="badge has" title="{{ r.pspdb_title }}">known dump</span>{% elif r.pspdb_status == 'unknown' %}<span class="badge warn">unknown dump</span>{% endif %}
+          {% if r.status != 'ok' %}<span class="badge err">{{ r.error }}</span>{% endif %}
+        </a>
+      {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

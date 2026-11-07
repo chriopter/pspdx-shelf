@@ -1,0 +1,36 @@
+# umdlibrary: private, LAN only. Never publish port 8080 to the internet.
+#
+#   UMD_LIBRARY=/path/to/your/isos docker compose up --build -d
+#
+# Variables (put them in a .env file next to this one, or on the command line):
+#   UMD_LIBRARY   the folder with the .iso/.cso files        default ./isos
+#   UMD_PORT      the host port the UI is served on          default 8080
+#   UMD_HOST      the name or IP of this machine on the LAN  default localhost
+#   UMD_PUBLIC_URL  the https:// address written into the catalog (a reverse
+#                 proxy in front; PSPDX reads catalogs over HTTPS only)
+#   UMD_PSPDB     a local clone of github.com/ryp/pspdb, for the Verify tool
+services:
+  umdlibrary:
+    build: .
+    image: umdlibrary
+    container_name: umdlibrary
+    ports:
+      - "${UMD_PORT:-8080}:8080"
+    volumes:
+      # Read-only by default: the service never writes into the library.
+      # Renaming (the one write, dry run first) needs :rw here.
+      - "${UMD_LIBRARY:-./isos}:/isos:ro"
+      - ./data:/data
+      - ./out:/out
+      - "${UMD_PSPDB:-./pspdb}:/pspdb:ro"
+    environment:
+      UMD_HOST: "${UMD_HOST:-localhost}"
+      UMD_PUBLIC_URL: "${UMD_PUBLIC_URL:-}"
+    restart: unless-stopped
+
+  # docker compose run --rm test
+  test:
+    build: .
+    image: umdlibrary
+    profiles: ["test"]
+    command: ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]

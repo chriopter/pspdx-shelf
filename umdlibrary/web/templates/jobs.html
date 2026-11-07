@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Jobs{% endblock %}
+{% block content %}
+<h1>Jobs <small>this process, one worker thread, one job at a time</small></h1>
+<p>Watch folder: {% if watcher.enabled %}on, every {{ watcher.interval }} s, next scan in {{ watcher.next_in }} s{% else %}off{% endif %} (<a href="{{ url_for('scan.page') }}">Scan</a>). <a href="{{ url_for('jobs.page') }}">Refresh</a></p>
+<div id="jobs-list" data-poll="/api/jobs">
+{% for job in jobs %}{% include "_job.html" %}{% else %}<p class="empty">no jobs yet. Everything that runs shows up here.</p>{% endfor %}
+</div>
+{% endblock %}

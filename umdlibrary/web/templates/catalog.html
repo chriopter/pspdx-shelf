@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Catalog{% endblock %}
+{% block content %}
+<h1>Catalog</h1>
+<p>A build writes <code>catalog.json</code>, <code>apps/&lt;id&gt;/</code> media and one <code>.pspdx</code> per disc into <code>{{ out_dir }}/catalog</code>, checks everything against the vendored PSPDX schemas, and swaps the directory in whole. A build that does not validate publishes nothing; the last good one stays.</p>
+<form method="post" action="{{ url_for('catalog.build') }}"><button class="primary">Build and publish</button></form>
+
+<h2>URLs</h2>
+<table class="kv">
+<tr><th>served here</th><td><a href="/catalog/catalog.json">{{ urls.catalog }}</a></td></tr>
+<tr><th>written in the catalog</th><td><code>{{ urls.public }}</code> <span class="muted">— PSPDX reads catalogs over HTTPS only; put a reverse proxy at this address in front, or change public_url in <a href="{{ url_for('settings.page') }}">Settings</a></span></td></tr>
+<tr><th>media</th><td><code>{{ urls.apps }}</code></td></tr>
+<tr><th>images</th><td><code>{{ urls.umd }}</code> (range requests supported)</td></tr>
+<tr><th>manifests</th><td><code>{{ urls.pspdx }}</code></td></tr>
+</table>
+
+<h2>Published</h2>
+{% if published %}
+<p>{{ published.apps }} apps and {{ published.media_files }} media files, generated {{ published.generated_at }}, URLs under <code>{{ published.public_url }}</code>{% if published.public_url != public_url %} <span class="warn">(public_url has changed since; build again)</span>{% endif %}.</p>
+{% if published.skipped %}<details><summary>{{ published.skipped|length }} skipped</summary><ul>{% for s in published.skipped %}<li><a href="{{ url_for('library.disc', image_id=s.id) }}">{{ s.name }}</a>: {{ s.reason }}</li>{% endfor %}</ul></details>{% endif %}
+<details><summary>published catalog.json</summary><pre class="code">{{ live|json }}</pre></details>
+{% else %}<p class="empty">nothing published yet.</p>{% endif %}
+
+<h2>Next build</h2>
+<p>{{ preview.catalog.apps|length }} apps would be published{% if preview.skipped %}, {{ preview.skipped|length }} skipped{% endif %}.</p>
+{% if preview.skipped %}<ul>{% for s in preview.skipped %}<li><a href="{{ url_for('library.disc', image_id=s.id) }}">{{ s.name }}</a>: {{ s.reason }}</li>{% endfor %}</ul>{% endif %}
+{% if preview.problems %}<div class="error"><b>The next build would not validate:</b><ul>{% for p in preview.problems %}<li><code>{{ p }}</code></li>{% endfor %}</ul></div>{% else %}<p class="ok">Validates against catalog-v1.json.</p>{% endif %}
+<details><summary>catalog.json as it would be written</summary><pre class="code">{{ preview.catalog|json }}</pre></details>
+
+<h2>Catalog jobs</h2>
+{% for job in jobs %}{% include "_job.html" %}{% else %}<p class="empty">none yet this session.</p>{% endfor %}
+{% endblock %}

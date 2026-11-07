@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Logs{% endblock %}
+{% block content %}
+<h1>Logs <small>last {{ n }} lines of <code>{{ path }}</code></small></h1>
+<p><a href="{{ url_for('logs.page', n=n) }}">Refresh</a> · <a href="{{ url_for('logs.page', n=n*4) }}">more</a></p>
+<pre class="code log">{% for line in lines %}{{ line }}
+{% endfor %}</pre>
+{% endblock %}

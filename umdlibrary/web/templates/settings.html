@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<p>Stored in <code>{{ path }}</code>. Port changes take effect after a restart; everything else at once.</p>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if saved %}<p class="ok">saved.</p>{% endif %}
+<form method="post" action="{{ url_for('settings.save') }}" class="form">
+<label>library folder <input name="library_dir" value="{{ settings.library_dir }}"> <span class="muted">inside the container; the compose file mounts your folder here</span></label>
+<label>output folder <input name="output_dir" value="{{ settings.output_dir }}"> <span class="muted">the catalog build goes to &lt;output&gt;/catalog</span></label>
+<label>host name or IP <input name="host" value="{{ settings.host }}"> <span class="muted">what this machine is called on the LAN; used in the served URLs and, without public_url, in the catalog</span></label>
+<label>HTTP port <input name="http_port" value="{{ settings.http_port }}" type="number" min="1" max="65535"> <span class="muted">restart to apply</span></label>
+<label>public URL <input name="public_url" value="{{ settings.public_url }}" placeholder="https://{{ settings.host }}"> <span class="muted">the https:// base written into the catalog; empty means https://host. PSPDX derives each app's id from this host.</span></label>
+<label>rename pattern <input name="rename_pattern" value="{{ settings.rename_pattern }}"></label>
+<label>watch interval <input name="watch_interval" value="{{ settings.watch_interval }}" type="number" min="5"> seconds</label>
+<label><input type="checkbox" name="watch_enabled" value="1" {% if settings.watch_enabled %}checked{% endif %}> watch the folder</label>
+<label>catalog name <input name="catalog_name" value="{{ settings.catalog_name }}"></label>
+<label>log lines shown <input name="log_lines" value="{{ settings.log_lines }}" type="number" min="50" max="5000"></label>
+<label>pspdb checkout <input name="pspdb_dir" value="{{ settings.pspdb_dir }}" placeholder="/pspdb"> <span class="muted">a local clone of github.com/ryp/pspdb (its catalog/iso/ records); empty turns the Verify tool off. Nothing is fetched from the network.</span></label>
+<button class="primary">Save</button>
+</form>
+
+<h2>Publishers</h2>
+<p>The catalog's <code>author</code> per disc id; the SFO does not carry one.</p>
+<table class="list"><tr><th>disc id</th><th>publisher</th><th></th></tr>
+{% for disc_id, name in publishers %}<tr><td>{{ disc_id }}</td><td>{{ name }}</td><td><form method="post" action="{{ url_for('settings.publishers') }}" class="inline"><input type="hidden" name="remove" value="{{ disc_id }}"><button>remove</button></form></td></tr>{% else %}<tr><td colspan="3" class="empty">none</td></tr>{% endfor %}
+<tr><form method="post" action="{{ url_for('settings.publishers') }}"><td><input name="disc_id" placeholder="ULES-01234" size="12"></td><td><input name="publisher" placeholder="Publisher" size="30"></td><td><button>add</button></td></form></tr>
+</table>
+
+<h2>Languages</h2>
+<p>Per disc id, for discs whose PARAM.SFO says nothing: a multi-language EU disc is <code>en</code> until you say <code>en, de, fr, es, it</code>. Codes are lowercase ISO 639-1, a region tag allowed (pt-br).</p>
+<table class="list"><tr><th>disc id</th><th>languages</th><th></th></tr>
+{% for disc_id, codes in languages %}<tr><td>{{ disc_id }}</td><td>{{ codes|join(', ') }}</td><td><form method="post" action="{{ url_for('settings.languages') }}" class="inline"><input type="hidden" name="remove" value="{{ disc_id }}"><button>remove</button></form></td></tr>{% else %}<tr><td colspan="3" class="empty">none</td></tr>{% endfor %}
+<tr><form method="post" action="{{ url_for('settings.languages') }}"><td><input name="disc_id" placeholder="ULES-01234" size="12"></td><td><input name="languages" placeholder="en, de, fr, es, it" size="30"></td><td><button>add</button></td></form></tr>
+</table>
+
+<h2>Current values</h2>
+<pre class="code">{{ settings|json }}</pre>
+{% endblock %}

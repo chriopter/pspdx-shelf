@@ -1,0 +1,10 @@
+<div class="job {{ job.state }}" data-job="{{ job.id }}">
+  <div class="job-head">
+    <a href="{{ url_for('jobs.job', job_id=job.id) }}">#{{ job.id }} {{ job.title }}</a>
+    <span class="state">{{ job.state }}</span>
+  </div>
+  <div class="bar"><div class="fill" style="width: {{ job.to_dict().percent }}%"></div></div>
+  <div class="meta"><span class="msg">{{ job.message }}</span>
+    <span class="times">queued {{ job.queued_at }}{% if job.started_at %}, started {{ job.started_at }}{% endif %}{% if job.ended_at %}, ended {{ job.ended_at }}{% endif %}</span></div>
+  {% if job.error %}<div class="error">{{ job.error }}</div>{% endif %}
+</div>

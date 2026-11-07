@@ -1,0 +1,8 @@
+data/
+out/
+isos/
+pspdb/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/

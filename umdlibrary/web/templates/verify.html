@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Verify{% endblock %}
+{% block content %}
+<h1>Verify against pspdb <small>{{ counts.known_dumps }} known, {{ counts.unknown_dumps }} unknown, {{ counts.unhashed }} waiting for a hash</small></h1>
+<p><a href="https://github.com/ryp/pspdb">pspdb</a> is a hash inventory of PSP media. With a local clone of it, this job matches every hashed image's SHA-256 and size against its <code>catalog/iso/*/*-ingest.json</code> records and marks the disc a known dump, with the title and identifier the record names, or unknown. Nothing is fetched from the network; you clone the repository yourself.</p>
+{% if not pspdb_dir %}
+<p class="warn">Off: no pspdb checkout is set. Mount a clone into the container and enter its path in <a href="{{ url_for('settings.page') }}">Settings</a> (the compose file mounts <code>./pspdb</code> at <code>/pspdb</code>).</p>
+{% elif not where %}
+<p class="error">The path <code>{{ pspdb_dir }}</code> has no <code>catalog/iso/</code> directory with records.</p>
+{% else %}
+<p>Records under <code>{{ where }}</code>.</p>
+<form method="post" action="{{ url_for('verify.run') }}"><button class="primary">Verify {{ counts.ok - counts.unhashed }} hashed image{{ 's' if counts.ok - counts.unhashed != 1 }}</button></form>
+{% endif %}
+<h2>Verify jobs</h2>
+{% for job in jobs %}{% include "_job.html" %}{% else %}<p class="empty">none yet this session.</p>{% endfor %}
+<h2>Images</h2>
+<table class="list">
+<tr><th>file</th><th>disc</th><th>sha256</th><th>pspdb</th></tr>
+{% for r in rows %}<tr><td><a href="{{ url_for('library.disc', image_id=r.id) }}">{{ r.name }}</a></td><td>{{ r.disc_key }}</td><td>{% if r.sha256 %}<code>{{ r.sha256[:16] }}…</code>{% else %}<span class="muted">waiting</span>{% endif %}</td>
+<td>{% if r.pspdb_status == 'known' %}<span class="ok">known dump</span>: {{ r.pspdb_title }} ({{ r.pspdb_identifier }}){% elif r.pspdb_status == 'unknown' %}<span class="warn">unknown</span>{% else %}<span class="muted">not verified</span>{% endif %}</td></tr>{% endfor %}
+</table>
+{% endblock %}

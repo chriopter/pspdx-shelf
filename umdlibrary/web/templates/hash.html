@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Hash{% endblock %}
+{% block content %}
+<h1>Hash <small>{{ counts.unhashed }} of {{ counts.ok }} readable images still without a SHA-256</small></h1>
+<p>The catalog needs the SHA-256 of every image; the PSP compares it to find updates. Hashing streams the file in 4 MB pieces, and the result is cached by path, size and mtime, so a rescan or a rename costs nothing.</p>
+<form method="post" action="{{ url_for('scan.hash_run') }}"><button class="primary" {% if not counts.unhashed %}disabled{% endif %}>Hash {{ counts.unhashed }} image{{ 's' if counts.unhashed != 1 }}</button></form>
+<h2>Hash jobs</h2>
+{% for job in jobs %}{% include "_job.html" %}{% else %}<p class="empty">none yet this session.</p>{% endfor %}
+<h2>Images</h2>
+<table class="list">
+<tr><th>file</th><th>disc</th><th>size</th><th>sha256</th></tr>
+{% for r in rows %}<tr><td><a href="{{ url_for('library.disc', image_id=r.id) }}">{{ r.name }}</a></td><td>{{ r.disc_key }}</td><td>{{ r.size_human }}</td><td>{% if r.sha256 %}<code>{{ r.sha256[:16] }}…</code>{% else %}<span class="warn">waiting</span>{% endif %}</td></tr>{% endfor %}
+</table>
+{% endblock %}

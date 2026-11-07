@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+<h1>Scan</h1>
+<p>The library folder is <code>{{ settings.library_dir }}</code>: {{ counts.images }} images known, {{ counts.errors }} unreadable, {{ counts.no_media }} without an icon. A scan reads new and changed images (size or mtime), forgets gone ones and extracts their media into the data volume. Top level only, .iso and .cso.</p>
+<form method="post" action="{{ url_for('scan.run') }}" class="inline"><button class="primary">Scan now</button></form>
+<form method="post" action="{{ url_for('scan.media') }}" class="inline"><button>Extract missing media</button></form>
+<form method="post" action="{{ url_for('scan.media') }}" class="inline"><input type="hidden" name="all" value="1"><button>Extract all media again</button></form>
+
+<h2>Watch folder</h2>
+<p>{% if watcher.enabled %}On: a scan is queued every {{ watcher.interval }} s, next in {{ watcher.next_in }} s, last run {{ watcher.last_run|stamp }}.{% else %}Off (the default). Nothing runs unless you press a button.{% endif %}</p>
+<form method="post" action="{{ url_for('scan.watch') }}" class="inline">
+  <input type="hidden" name="enabled" value="{{ '0' if watcher.enabled else '1' }}">
+  <label>every <input type="number" name="interval" value="{{ watcher.interval }}" min="5" size="5"> seconds</label>
+  <button>{{ 'Turn off' if watcher.enabled else 'Turn on' }}</button>
+</form>
+
+<h2>Scan and media jobs</h2>
+{% for job in jobs %}{% include "_job.html" %}{% else %}<p class="empty">none yet this session.</p>{% endfor %}
+{% endblock %}

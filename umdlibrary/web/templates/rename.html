@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Rename{% endblock %}
+{% block content %}
+<h1>Rename</h1>
+<p>Renames images after what the disc says. Fields: {% for f in fields %}<code>{{ '{' + f + '}' }}</code> {% endfor %}. Names are made safe for FAT: ASCII, no separators or control characters, at most {{ max_name }} characters, no trailing dot. The table is a dry run; nothing changes until you press Apply. Nothing is ever overwritten, nothing leaves <code>{{ settings.library_dir }}</code>, every rename is logged, and the database follows the file. With the folder mounted read-only (the compose default) the apply fails harmlessly; mount it <code>rw</code> to rename.</p>
+<form method="get" action="{{ url_for('rename.page') }}" class="inline">
+  <label>pattern <input type="text" name="pattern" value="{{ pattern }}" size="40"></label>
+  <button>Dry run</button>
+</form>
+<form method="post" action="{{ url_for('rename.save_pattern') }}" class="inline"><input type="hidden" name="pattern" value="{{ pattern }}"><button>Save as default</button></form>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<p>{{ summary.clean }} would be renamed, {{ summary.unchanged }} already named so, {{ summary.conflict }} in conflict, {{ summary.skipped }} skipped.</p>
+<form method="post" action="{{ url_for('rename.apply') }}">
+<input type="hidden" name="pattern" value="{{ pattern }}">
+<table class="list">
+<tr><th></th><th>from</th><th>to</th><th>status</th></tr>
+{% for e in entries %}
+<tr class="{{ e.status }}">
+  <td>{% if e.status == 'clean' %}<input type="checkbox" name="id" value="{{ e.id }}" checked>{% endif %}</td>
+  <td><a href="{{ url_for('library.disc', image_id=e.id) }}">{{ e.from }}</a></td>
+  <td>{{ e.to or '' }}</td>
+  <td>{{ e.status }}{% if e.reason %}: {{ e.reason }}{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+<button class="primary" {% if not summary.clean %}disabled{% endif %}>Apply: rename the checked files</button>
+</form>
+<h2>Rename jobs</h2>
+{% for job in jobs %}{% include "_job.html" %}{% else %}<p class="empty">none yet this session.</p>{% endfor %}
+<h2>History</h2>
+{% if history %}<table class="list"><tr><th>when</th><th>from</th><th>to</th><th></th></tr>
+{% for h in history %}<tr><td>{{ h.at }}</td><td>{{ h.old_path }}</td><td>{{ h.new_path }}</td><td>{{ 'ok' if h.ok else 'failed: ' + (h.error or '') }}</td></tr>{% endfor %}</table>
+{% else %}<p class="empty">no renames yet.</p>{% endif %}
+{% endblock %}

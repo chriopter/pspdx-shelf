@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Job #{{ job.id }}{% endblock %}
+{% block content %}
+<h1>Job #{{ job.id }}: {{ job.title }}</h1>
+{% include "_job.html" %}
+{% if job.state in ('queued', 'running') %}<form method="post" action="{{ url_for('jobs.cancel', job_id=job.id) }}" class="inline"><button>Cancel</button></form> <a href="{{ url_for('jobs.job', job_id=job.id) }}">Refresh</a>{% endif %}
+{% if job.result is not none %}<h2>Result</h2><pre class="code">{{ job.result|json }}</pre>{% endif %}
+<h2>Log</h2>
+<pre class="code log" data-job-log="{{ job.id }}">{% for line in job.lines %}{{ line }}
+{% endfor %}</pre>
+{% endblock %}

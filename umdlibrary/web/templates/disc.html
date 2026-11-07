@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ row.title or row.name }}{% endblock %}
+{% block content %}
+<div class="hero" {% if row.has_media['PIC1.PNG'] %}style="background-image: url('{{ url_for('library.media', image_id=row.id, name='PIC1.PNG') }}')"{% endif %}>
+  <div class="hero-inner">
+    {% if row.has_media['ICON0.PNG'] %}<img class="icon2x" src="{{ url_for('library.media', image_id=row.id, name='ICON0.PNG') }}" alt="" width="288" height="160">{% endif %}
+    <div>
+      <h1>{{ row.title or row.name }}</h1>
+      <p class="sub">{{ row.disc_key }} ({{ row.disc_id_source }}) · {{ row.region }} · {{ row.languages|join(', ') or 'languages unknown' }} ({{ row.languages_from }}) · {{ row.size_human }} · {{ row.format }}{% if row.format == 'cso' %} ({{ row.iso_size|human_size }} uncompressed){% endif %}</p>
+      {% if row.status != 'ok' %}<p class="error">{{ row.error }}</p>{% endif %}
+      {% if row.duplicate %}<p class="warn">{{ 'This is the newest file for this disc id; the catalog serves it.' if row.primary else 'An older duplicate: a newer file with the same disc id is what the catalog serves.' }}
+        {% for o in others %}<a href="{{ url_for('library.disc', image_id=o.id) }}">{{ o.name }}</a> {% endfor %}</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if versions|length > 1 %}
+<h2>Versions of this game <span class="muted">grouped by title "{{ row.game_key }}"</span></h2>
+<table class="list versions">
+<tr><th>region</th><th>disc id</th><th>languages</th><th>title</th><th>format</th><th>size</th><th>file</th><th>media</th></tr>
+{% for v in versions %}<tr class="{{ 'this' if v.id == row.id }}">
+<td>{{ v.region }}</td><td><a href="{{ url_for('library.disc', image_id=v.id) }}">{{ v.disc_key }}</a>{% if v.id == row.id %} (this){% endif %}</td>
+<td>{{ v.languages|join(', ') }}</td><td>{{ v.title }}</td><td>{{ v.format }}</td><td>{{ v.size_human }}</td><td>{{ v.name }}</td>
+<td>{% for m in media_files %}<span class="badge {{ 'has' if v.has_media[m] else 'no' }}">{{ m.split('.')[0] }}</span>{% endfor %}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+<div class="cols">
+<section>
+<h2>File</h2>
+<table class="kv">
+<tr><th>path</th><td><code>{{ row.abs_path }}</code></td></tr>
+<tr><th>size</th><td>{{ row.size|human_size }} ({{ "{:,}".format(row.size) }} bytes)</td></tr>
+<tr><th>modified</th><td>{{ row.mtime_iso }}</td></tr>
+<tr><th>sha256</th><td>{% if row.sha256 %}<code>{{ row.sha256 }}</code>{% else %}not yet, see <a href="{{ url_for('scan.hash_page') }}">Hash</a>{% endif %}</td></tr>
+<tr><th>volume id</th><td>{{ row.volume_id or '' }}</td></tr>
+<tr><th>UMD_DATA.BIN</th><td>{% if row.umd_data %}{% for k, v in row.umd_data.items() %}{{ k }} <code>{{ v }}</code> {% endfor %}{% else %}<span class="muted">none</span>{% endif %}</td></tr>
+<tr><th>pspdb</th><td>{% if row.pspdb_status == 'known' %}<span class="ok">known dump</span>: {{ row.pspdb_title }} ({{ row.pspdb_identifier }}), record <code>{{ row.pspdb_file }}</code>{% elif row.pspdb_status == 'unknown' %}<span class="warn">unknown dump</span>: no pspdb record has this SHA-256 and size{% else %}<span class="muted">not verified; see <a href="{{ url_for('verify.page') }}">Verify</a></span>{% endif %}</td></tr>
+<tr><th>seen</th><td>first {{ row.first_seen }}, last {{ row.last_seen }}</td></tr>
+<tr><th>languages</th><td>{{ row.languages|join(', ') or 'unknown' }} <span class="muted">from the {{ row.languages_from }}{% if row.languages_from == 'region' %}; the SFO says nothing, set an override in <a href="{{ url_for('settings.page') }}">Settings</a> if the disc speaks more{% endif %}</span></td></tr>
+</table>
+<form method="post" action="{{ url_for('library.reread', image_id=row.id) }}"><button>Read this image again</button></form>
+
+<h2>PARAM.SFO</h2>
+{% if row.sfo %}
+<table class="kv">
+{% for k in sfo_keys if k in row.sfo %}<tr><th>{{ k }}</th><td>{{ row.sfo[k] }}</td></tr>{% endfor %}
+{% for k, v in row.sfo.items() if k not in sfo_keys %}<tr><th>{{ k }}</th><td>{{ v }}</td></tr>{% endfor %}
+</table>
+{% else %}<p class="empty">none read.</p>{% endif %}
+
+<h2>Media</h2>
+<table class="kv">
+{% for m in media_files %}
+<tr><th>{{ m }}</th><td>
+{% if row.has_media[m] %}
+  {% if m.endswith('.PNG') %}<a href="{{ url_for('library.media', image_id=row.id, name=m) }}"><img src="{{ url_for('library.media', image_id=row.id, name=m) }}" alt="{{ m }}" class="thumb"></a>{% endif %}
+  <a href="{{ url_for('library.media', image_id=row.id, name=m) }}">download</a> ({{ row.media[m]|human_size }})
+  {% if m == 'ICON1.PMF' %}
+    {% if row.has_mp4 %}<br><video controls preload="metadata" src="{{ url_for('library.media', image_id=row.id, name='ICON1.mp4') }}" width="480"></video>
+    {% elif ffmpeg %}<form method="post" action="{{ url_for('library.film', image_id=row.id) }}" class="inline"><button>Convert to MP4 (ffmpeg job)</button></form>
+    {% else %}<span class="muted">no ffmpeg in the container, no MP4</span>{% endif %}
+    {% for j in film_jobs[:3] %}<div class="muted"><a href="{{ url_for('jobs.job', job_id=j.id) }}">job #{{ j.id }}</a> {{ j.state }}</div>{% endfor %}
+  {% endif %}
+{% elif m in row.media %}<span class="muted">on the disc ({{ row.media[m]|human_size }}), not extracted</span>
+{% else %}<span class="muted">not on the disc</span>{% endif %}
+</td></tr>
+{% endfor %}
+</table>
+</section>
+
+<section>
+<h2>PSPDX</h2>
+{% if entry %}
+<table class="kv">
+<tr><th>source</th><td><code>{{ urls.source }}</code></td></tr>
+<tr><th>image</th><td><code>{{ urls.image }}</code> (served here as <a href="/umd/{{ row.disc_key }}.{{ row.format }}">/umd/{{ row.disc_key }}.{{ row.format }}</a>){% if not row.primary %} <span class="warn">— an older duplicate; the URL serves the newest file</span>{% endif %}</td></tr>
+<tr><th>manifest</th><td><code>{{ urls.manifest }}</code> (<a href="/umd/{{ row.disc_key }}.pspdx">published copy</a>, 404 until the catalog is built)</td></tr>
+<tr><th>our id</th><td><code>{{ entry.id }}</code></td></tr>
+<tr><th>console id</th><td><code>{{ console_id or 'none: the name has no letter or digit' }}</code> <span class="muted">(what PSPDX derives from source and name)</span></td></tr>
+</table>
+<h3>.pspdx <span class="muted">(preview; the published one is written by the catalog build)</span></h3>
+<pre class="code">{{ pspdx|json }}</pre>
+<h3>catalog entry <span class="muted">(preview{% if not row.sha256 %}; sha256 is a placeholder until hashed{% endif %})</span></h3>
+<pre class="code">{{ entry|json }}</pre>
+{% else %}<p class="empty">Not a readable PSP disc; nothing for the catalog.</p>{% endif %}
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+# Volumes and local data
+data/
+out/
+isos/
+pspdb/
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
