@@ -2,7 +2,6 @@
 and media/ in the data folder. Rebuilt at start, on Rebuild, and when a check
 finds the folder changed; a file
 that did not change is not read again, and its SHA-256 is kept across restarts."""
-import gzip
 import hashlib
 import json
 import logging
@@ -19,8 +18,8 @@ FIELDS = {"ICON0.PNG": "icon", "PIC1.PNG": "screenshots", "ICON1.PMF": "video", 
 
 
 class Shelf:
-    def __init__(self, discs_dir: str, data_dir: str, url: str):
-        self.discs_dir, self.data_dir, self.url = discs_dir, data_dir, url.rstrip("/")
+    def __init__(self, discs_dir: str, data_dir: str):
+        self.discs_dir, self.data_dir = discs_dir, data_dir
         self.media_dir = os.path.join(data_dir, "media")
         os.makedirs(self.media_dir, exist_ok=True)
         self.items: list[dict] = []   # one per file, what the pages show
@@ -115,7 +114,7 @@ class Shelf:
             if cached and cached[:2] == [file["size"], file["mtime"]] and os.path.isdir(folder):
                 item["media_key"], item["sha256"] = self._media_key(item), cached[2]
                 item["media"] = self._paths(item["media_key"], [n.upper() for n in os.listdir(folder)])
-                item["app"] = catalog.app(found, self.url, item, item["media"])
+                item["app"] = catalog.app(found, item, item["media"])
         except disc.DiscError as exc:
             item["error"] = str(exc)
         except Exception as exc:
@@ -130,7 +129,7 @@ class Shelf:
             found = disc.read(os.path.join(self.discs_dir, item["file"]))
             item["media"] = self._media(item, found.media)
             item["sha256"] = self._sha256(item)
-            item["app"] = catalog.app(found, self.url, item, item["media"])
+            item["app"] = catalog.app(found, item, item["media"])
         except Exception as exc:
             item["error"] = str(exc) or type(exc).__name__
             log.warning("%s: %s", item["file"], item["error"])
@@ -174,12 +173,7 @@ class Shelf:
         return out
 
     def _publish(self, apps: list[dict], items: list[dict], final: bool) -> None:
-        path = os.path.join(self.data_dir, "catalog.json")
-        _save(path, catalog.document(apps, time.time()), compact=True)
-        # PSPDX asks for the catalog gzipped: over a PSP's radio every kilobyte counts.
-        with open(path, "rb") as f, gzip.open(path + ".gz.tmp", "wb", 9) as out:
-            out.write(f.read())
-        os.replace(path + ".gz.tmp", path + ".gz")
+        _save(os.path.join(self.data_dir, "catalog.json"), catalog.document(apps, time.time()), compact=True)
         if not final:
             return
         # What is gone from the folder is forgotten.

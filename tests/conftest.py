@@ -64,4 +64,4 @@ def write(path, data: bytes, mtime: float = 1_700_000_000) -> None:
 @pytest.fixture
 def shelf(tmp_path):
     (tmp_path / "discs").mkdir()
-    return Shelf(str(tmp_path / "discs"), str(tmp_path / "data"), "https://psp.lan")
+    return Shelf(str(tmp_path / "discs"), str(tmp_path / "data"))

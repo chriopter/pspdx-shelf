@@ -23,11 +23,11 @@ def test_catalog(shelf):
     sha = hashlib.sha256(iso).hexdigest()
     assert [a["name"] for a in doc["apps"]] == ["Game (US)", "Second (EU)"]
     game = doc["apps"][0]
-    assert game["source"] == "https://psp.lan/discs/ULUS-10404"
+    assert game["source"] == "https://pspdx-shelf.local/discs/ULUS-10404"
     assert (game["name"], game["type"], game["category"], game["summary"]) == ("Game (US)", "iso", "game", "ULUS-10404, US, 0 MB")
     assert game["game"] == "game"
     assert game["releases"] == [{"tag": "1.02", "published_at": "2023-11-14T22:13:20Z",
-                                 "url": "https://psp.lan/discs/ULUS-10404.iso", "size": len(iso), "sha256": sha}]
+                                 "url": "http://pspdx-shelf.base/discs/ULUS-10404.iso", "size": len(iso), "sha256": sha}]
     key = game["media"]["icon"].split("/")[1]
     assert game["media"] == {"icon": f"media/{key}/icon0.png", "screenshots": [f"media/{key}/pic1.png"],
                              "video": f"media/{key}/icon1.pmf", "sound": f"media/{key}/snd0.at3"}
@@ -50,7 +50,7 @@ def test_unchanged_files_are_not_read_again(shelf, monkeypatch):
 def test_hashes_survive_a_restart(shelf, monkeypatch):
     write(f"{shelf.discs_dir}/a.iso", make_iso())
     shelf.refresh()
-    again = type(shelf)(shelf.discs_dir, shelf.data_dir, shelf.url)
+    again = type(shelf)(shelf.discs_dir, shelf.data_dir)
     monkeypatch.setattr("hashlib.sha256", None)
     again.refresh()
     assert again.items[0]["sha256"] == shelf.items[0]["sha256"]
@@ -71,15 +71,6 @@ def test_a_broken_file_is_shown_not_listed(shelf):
     shelf.refresh()
     assert len(published(shelf)["apps"]) == 1
     assert next(i for i in shelf.items if i["file"] == "broken.iso")["error"]
-
-
-def test_a_url_the_schema_refuses(tmp_path):
-    from shelf.shelf import Shelf
-    (tmp_path / "discs").mkdir()
-    shelf = Shelf(str(tmp_path / "discs"), str(tmp_path / "data"), "https://user.github.io")
-    write(f"{shelf.discs_dir}/a.iso", make_iso())
-    shelf.refresh()
-    assert published(shelf)["apps"] == [] and "source" in shelf.items[0]["error"]
 
 
 def test_a_name_without_ascii_letters(shelf):
@@ -121,7 +112,7 @@ def test_two_discs_of_one_title_and_region_are_two_apps(shelf):
 def test_a_restart_lists_known_discs_at_once(shelf, monkeypatch):
     write(f"{shelf.discs_dir}/a.iso", make_iso(media=("ICON0.PNG",)))
     shelf.refresh()
-    again = type(shelf)(shelf.discs_dir, shelf.data_dir, shelf.url)
+    again = type(shelf)(shelf.discs_dir, shelf.data_dir)
     seen = []
     publish = again._publish
     monkeypatch.setattr(again, "_publish", lambda apps, items, final: (seen.append([a["media"] for a in apps]), publish(apps, items, final)))

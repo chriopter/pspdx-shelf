@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<p>Add <code>{{ shelf.url }}/</code> as a source in PSPDX.</p>
+<p>Add <code>{{ request.host_url.rstrip("/") }}/</code> as a source in PSPDX.</p>
 {% if not shelf.items and not shelf.progress %}<p class="muted">No .iso or .cso in <code>{{ shelf.discs_dir }}</code> yet.</p>{% endif %}
 <div class="tiles">
 {% for item in shelf.items if not (item.error or item.duplicate) %}

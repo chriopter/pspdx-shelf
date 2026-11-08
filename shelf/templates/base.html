@@ -11,7 +11,7 @@
 <header>
   <a class="brand" href="/">pspdx-shelf</a>
   <span class="muted">{{ shelf.status }}</span>
-  <button id="copy" data-link="{{ shelf.url }}/catalog.json" title="{{ shelf.url }}/catalog.json">
+  <button id="copy" data-link="{{ request.host_url.rstrip("/") }}/catalog.json" title="{{ request.host_url.rstrip("/") }}/catalog.json">
     <svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>Copy catalog link</button>
   <form method="post" action="/rebuild"><button>
     <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Rebuild</button></form>

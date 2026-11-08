@@ -8,7 +8,7 @@ For your own discs, on your own network.
 
 ## Run
 
-1. Save this as `docker-compose.yml`, with your folder and this machine's address:
+1. Save this as `docker-compose.yml`, with your folder:
 
    ```yaml
    services:
@@ -19,20 +19,20 @@ For your own discs, on your own network.
        volumes:
          - /path/to/your/isos:/discs:ro
          - ./data:/data
-       environment:
-         SHELF_URL: http://192.168.1.10:8080
-         # SHELF_PASSWORD: change-me
+       # environment:
+       #   SHELF_PASSWORD: change-me
        restart: unless-stopped
    ```
 
 2. `docker compose up -d`, then open `http://192.168.1.10:8080` in a browser.
 3. In PSPDX: **Sources** → add `http://192.168.1.10:8080/`.
 
-- `SHELF_URL` is the address PSPDX reaches the shelf at: `http://` on your own
-  network, or `https://` with a reverse proxy in front.
-- `SHELF_PASSWORD` puts everything under `/<password>/`: the page, the catalog
-  and the downloads. Add `http://192.168.1.10:8080/<password>/` in PSPDX then;
-  every other address answers 404.
+- No address to set: the downloads in the catalog point back the way it was
+  fetched, so the shelf works at home, through a VPN or behind a reverse proxy
+  (which sends `X-Forwarded-Host` and `-Proto`) at once, as the same apps in PSPDX.
+- `SHELF_PASSWORD` asks for a password everywhere, as HTTP Basic with any user
+  name: the page in the browser, and the catalog and downloads in PSPDX, which
+  asks for it when the source is added. Plain `http://` sends it in the clear.
 - `SHELF_INTERVAL`: how often the folder is checked for changes, in seconds; once a
   day by default, so a sleeping disk stays asleep. **Rebuild** on the page reads it at once.
 

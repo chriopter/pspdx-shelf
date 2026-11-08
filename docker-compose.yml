@@ -6,7 +6,6 @@ services:
     volumes:
       - /path/to/your/isos:/discs:ro
       - ./data:/data
-    environment:
-      SHELF_URL: http://192.168.1.10:8080
-      # SHELF_PASSWORD: change-me
+    # environment:
+    #   SHELF_PASSWORD: change-me
     restart: unless-stopped

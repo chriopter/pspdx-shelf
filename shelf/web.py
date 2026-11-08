@@ -1,19 +1,39 @@
 """The pages and the files PSPDX fetches. Plain HTTP; HTTPS is the proxy's job."""
 import json
 
+import functools
+import gzip
 import hmac
+import os
 
 from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory
+from werkzeug.middleware.proxy_fix import ProxyFix
 
+from . import catalog
 from .catalog import size
 
 FLAGS = {"EU": "🇪🇺", "US": "🇺🇸", "JP": "🇯🇵", "KR": "🇰🇷", "AS": "🌏"}
+
+
+@functools.lru_cache(maxsize=8)
+def _served(path: str, mtime: float, base: str, zipped: bool) -> bytes:
+    with open(path, "rb") as f:
+        body = catalog.served(f.read(), base)
+    return gzip.compress(body, 9) if zipped else body
+
+
+def served(path: str, base: str, zipped: bool) -> bytes:
+    """The catalog for base, made once per base and catalog."""
+    return _served(path, os.path.getmtime(path), base, zipped)
 
 
 def create(shelf, password: str = "") -> Flask:
     """With a password, everything asks for it, HTTP Basic, any user name:
     the pages in a browser, and the catalog and downloads in PSPDX."""
     app = Flask(__name__)
+    # Behind a proxy (Caddy, Tailscale) the address asked for is in its
+    # X-Forwarded headers: one proxy in front is trusted for them.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_port=1)
 
     @app.before_request
     def ask():
@@ -50,11 +70,17 @@ def create(shelf, password: str = "") -> Flask:
 
     @app.get("/catalog.json")
     def catalog_json():
-        if "gzip" not in request.headers.get("Accept-Encoding", ""):
-            return send_from_directory(shelf.data_dir, "catalog.json", max_age=0)
-        response = send_from_directory(shelf.data_dir, "catalog.json.gz", mimetype="application/json", max_age=0)
-        response.headers["Content-Encoding"] = "gzip"
-        response.headers["Vary"] = "Accept-Encoding"
+        # Downloads point back the way this request came: the LAN address at
+        # home, the VPN's or the proxy's from outside. PSPDX asks for gzip,
+        # and over a PSP's radio every kilobyte counts.
+        path = os.path.join(shelf.data_dir, "catalog.json")
+        if not os.path.exists(path):
+            abort(404)
+        zipped = "gzip" in request.headers.get("Accept-Encoding", "")
+        body = served(path, request.host_url, zipped)
+        response = Response(body, mimetype="application/json", headers={"Cache-Control": "no-cache", "Vary": "Accept-Encoding"})
+        if zipped:
+            response.headers["Content-Encoding"] = "gzip"
         return response
 
     @app.get("/media/<path:path>")

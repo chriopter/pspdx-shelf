@@ -17,7 +17,7 @@ def client(shelf):
 
 def test_pages(client):
     page = client.get("/").get_data(as_text=True)
-    assert "Game" in page and "broken.iso" in page and "https://psp.lan/" in page
+    assert "Game" in page and "broken.iso" in page and "http://localhost/" in page
     assert "ULUS-10404" in client.get("/discs/ULUS-10404").get_data(as_text=True)
     assert client.get("/discs/ULES-99999").status_code == 404
 
@@ -70,3 +70,16 @@ def test_a_password_is_asked_for_everything(shelf):
     assert client.get("/catalog.json", auth=("x", "wrong")).status_code == 401
     assert client.get("/catalog.json", auth=("pspdx", "test-password")).status_code == 200
     assert client.get("/catalog.json", auth=("", "test-password")).status_code == 200
+
+
+def test_downloads_point_back_the_way_the_catalog_came(client):
+    def url(**kw):
+        return json.loads(client.get("/catalog.json", **kw).data)["apps"][0]["releases"][0]["url"]
+    assert url() == "http://localhost/discs/ULUS-10404.cso"
+    assert url(base_url="http://192.168.10.10:8100") == "http://192.168.10.10:8100/discs/ULUS-10404.cso"
+    # Behind a proxy, the address the PSP asked for.
+    assert url(headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "jellyhop.example.ts.net:8100"}) == \
+        "https://jellyhop.example.ts.net:8100/discs/ULUS-10404.cso"
+    # The id PSPDX makes stays one, whichever way.
+    assert json.loads(client.get("/catalog.json", base_url="http://x:1").data)["apps"][0]["source"] == \
+        "https://pspdx-shelf.local/discs/ULUS-10404"
