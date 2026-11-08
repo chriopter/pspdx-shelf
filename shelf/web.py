@@ -1,23 +1,26 @@
 """The pages and the files PSPDX fetches. Plain HTTP; HTTPS is the proxy's job."""
 import json
 
-from flask import Flask, abort, redirect, render_template, request, send_from_directory
-from werkzeug.exceptions import NotFound
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
+import hmac
+
+from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory
 
 from .catalog import size
 
 FLAGS = {"EU": "🇪🇺", "US": "🇺🇸", "JP": "🇯🇵", "KR": "🇰🇷", "AS": "🌏"}
 
 
-def mounted(shelf, prefix: str):
-    """The app at prefix, /<password>, and 404 everywhere else."""
-    app = create(shelf)
-    return DispatcherMiddleware(NotFound(), {prefix: app}) if prefix else app
-
-
-def create(shelf) -> Flask:
+def create(shelf, password: str = "") -> Flask:
+    """With a password, everything asks for it, HTTP Basic, any user name:
+    the pages in a browser, and the catalog and downloads in PSPDX."""
     app = Flask(__name__)
+
+    @app.before_request
+    def ask():
+        given = request.authorization.password if request.authorization else None
+        if password and not (given and hmac.compare_digest(given.encode(), password.encode())):
+            return Response("A password is needed.\n", 401, {"WWW-Authenticate": 'Basic realm="pspdx-shelf"'})
+
     app.jinja_env.filters["size"] = size
     app.jinja_env.filters["flag"] = lambda region: FLAGS.get(region, "")
     app.jinja_env.filters["json"] = lambda v: json.dumps(v, indent=2, ensure_ascii=False)
@@ -29,7 +32,7 @@ def create(shelf) -> Flask:
     @app.post("/rebuild")
     def rebuild():
         shelf.rebuild()
-        return redirect(request.script_root + "/", 303)
+        return redirect("/", 303)
 
     @app.get("/discs/<disc_id>")
     def disc(disc_id):

@@ -21,7 +21,7 @@ For your own discs, on your own network.
          - ./data:/data
        environment:
          SHELF_URL: http://192.168.1.10:8080
-         # SHELF_PASSWORD: "1234567890123456"
+         # SHELF_PASSWORD: change-me
        restart: unless-stopped
    ```
 

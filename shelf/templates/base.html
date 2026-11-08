@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}pspdx-shelf{% endblock %}</title>
-<link rel="stylesheet" href="{{ request.script_root }}/static/style.css">
+<link rel="stylesheet" href="/static/style.css">
 {% if shelf.progress %}<meta http-equiv="refresh" content="5">{% endif %}
 </head>
 <body>
 <header>
-  <a class="brand" href="{{ request.script_root }}/">pspdx-shelf</a>
+  <a class="brand" href="/">pspdx-shelf</a>
   <span class="muted">{{ shelf.status }}</span>
   <button id="copy" data-link="{{ shelf.url }}/catalog.json" title="{{ shelf.url }}/catalog.json">
     <svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>Copy catalog link</button>
-  <form method="post" action="{{ request.script_root }}/rebuild"><button>
+  <form method="post" action="/rebuild"><button>
     <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Rebuild</button></form>
 </header>
 {% if shelf.progress %}{% set done, total = shelf.progress %}

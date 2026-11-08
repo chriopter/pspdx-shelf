@@ -60,17 +60,13 @@ def test_a_disc_still_being_read_has_its_page(shelf):
     assert "Still being read" in client.get("/discs/ULUS-10404").get_data(as_text=True)
 
 
-def test_a_password_is_the_path(shelf):
+def test_a_password_is_asked_for_everything(shelf):
     write(f"{shelf.discs_dir}/game.iso", make_iso("Game", "ULUS-10404"))
-    shelf.url += "/1234567890123456"
     shelf.refresh()
-    from werkzeug.test import Client
-    client = Client(web.mounted(shelf, "/1234567890123456"))
-    assert client.get("/").status_code == 404 and client.get("/catalog.json").status_code == 404
-    page = client.get("/1234567890123456/").get_data(as_text=True)
-    assert 'href="/1234567890123456/static/style.css"' in page and 'href="/1234567890123456/discs/ULUS-10404"' in page
-    catalog = json.loads(client.get("/1234567890123456/catalog.json").get_data())
-    assert catalog["apps"][0]["releases"][0]["url"] == "https://psp.lan/1234567890123456/discs/ULUS-10404.iso"
-    assert client.get("/1234567890123456/" + catalog["apps"][0]["media"]["icon"]).status_code == 200
-    assert client.get("/1234567890123456/discs/ULUS-10404.iso").status_code == 200
-    assert client.post("/1234567890123456/rebuild").headers["Location"].endswith("/1234567890123456/")
+    client = web.create(shelf, "test-password").test_client()
+    for path in ("/", "/catalog.json", "/discs/ULUS-10404.iso"):
+        answer = client.get(path)
+        assert answer.status_code == 401 and answer.headers["WWW-Authenticate"].startswith("Basic")
+    assert client.get("/catalog.json", auth=("x", "wrong")).status_code == 401
+    assert client.get("/catalog.json", auth=("pspdx", "test-password")).status_code == 200
+    assert client.get("/catalog.json", auth=("", "test-password")).status_code == 200

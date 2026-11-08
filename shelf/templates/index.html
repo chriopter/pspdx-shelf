@@ -4,9 +4,9 @@
 {% if not shelf.items and not shelf.progress %}<p class="muted">No .iso or .cso in <code>{{ shelf.discs_dir }}</code> yet.</p>{% endif %}
 <div class="tiles">
 {% for item in shelf.items if not (item.error or item.duplicate) %}
-  <a class="tile{{ '' if item.app else ' pending' }}" href="{{ request.script_root }}/discs/{{ item.id }}">
+  <a class="tile{{ '' if item.app else ' pending' }}" href="/discs/{{ item.id }}">
     <b>{{ item.title }}</b>
-    {% if item.media.icon %}<img src="{{ request.script_root }}/{{ item.media.icon }}" alt="" width="144" height="80">{% else %}<span class="noicon">{{ item.format }}</span>{% endif %}
+    {% if item.media.icon %}<img src="/{{ item.media.icon }}" alt="" width="144" height="80">{% else %}<span class="noicon">{{ item.format }}</span>{% endif %}
     <span class="flag" title="{{ item.region }}">{{ item.region | flag }}</span>
     <span class="muted"><span class="id">{{ item.id }} · </span>{{ item.size | size }}</span>
   </a>
