@@ -6,6 +6,8 @@ import re
 
 import jsonschema
 
+from . import genre
+
 SCHEMA_URL = "https://chriopter.github.io/pspdx/schema/catalog-v1.json"
 # PSPDX makes an app's id from its source's host, so the source is the same
 # whichever way the shelf is reached: at home, through a VPN, from outside.
@@ -52,6 +54,11 @@ def app(disc, file: dict, media: dict) -> dict:
             "sha256": file["sha256"],
         }],
     }
+    # The genre libretro's list gives the disc id, as a tag: what PSPDX
+    # browses a catalog by.
+    kind = genre.of(disc.id)
+    if kind:
+        entry["tags"] = [kind]
     if media:
         entry["media"] = media
     found = problems(document([entry], file["mtime"]))

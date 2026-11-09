@@ -44,6 +44,9 @@ For your own discs, on your own network.
   icon, picture, film and sound from `PSP_GAME/`.
 - **Every entry is checked** against the [catalog schema](https://chriopter.github.io/pspdx/#catalog-v1);
   a disc that fails is left out, with the reason on the page.
+- **Genres:** each disc carries its genre as a tag (Sports, Racing, Role-playing
+  (RPG), ...), looked up by its disc id in libretro-database's list, which is
+  checked in and pinned. A disc the list does not know has none.
 - **Two files of one disc:** the highest version is listed, a release before a beta or demo.
 - **Downloads can resume:** the images are served with HTTP ranges.
 - **Read-only:** the folder is mounted `:ro`; `./data` holds `catalog.json`, the
@@ -57,5 +60,14 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt pytest
 docker build -t pspdx-shelf .
 ```
 
+`tools/update-genres.py` pins the genre list to a newer libretro-database commit.
+
 A tag `v*` builds the image for amd64 and arm64 and publishes it to
 `ghcr.io/chriopter/pspdx-shelf`.
+
+## Credits
+
+The genres are from [libretro-database](https://github.com/libretro/libretro-database)
+by its contributors, licensed under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); see
+[`shelf/genres/`](shelf/genres/).
